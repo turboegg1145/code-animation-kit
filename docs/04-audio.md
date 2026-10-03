@@ -62,8 +62,7 @@ const FRAMES_PER_BEAT = BEAT * FPS;  // 15 帧/拍
 const DUR = 24;                 // 改这个 + 下面的 SEC_* 分节边界 = 换一部片子的配乐
 const N = DUR * SR;             // 每声道总帧数 = 1,058,400
 ```
-* **BPM 必须和页面里的 `BPM` 相同**（骨架里是 `const FPS = 30, BPM = 120;`，于是 `BEAT = 15` 帧、`BAR = 60` 帧）。
-* `FPS` 只被 `FRAMES_PER_BEAT` 用到，而 `FRAMES_PER_BEAT` 本身在编曲里没用——它是给你对齐用的说明性常量。
+* **BPM 必须和页面里的 `BPM` 相同**（骨架里是 `const FPS = 30, BPM = 120;`，于是 `BEAT = 15` 帧、`BAR = 60` 帧）；`FPS` 只被 `FRAMES_PER_BEAT` 用到，而 `FRAMES_PER_BEAT` 本身在编曲里没用——它是给你对齐用的说明性常量。
 
 **定位一律用拍，绝不做浮点累加**：
 ```js

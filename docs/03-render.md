@@ -19,7 +19,7 @@ npm i                                    # 只装 puppeteer-core（^23.0.0），
 npx puppeteer browsers install chrome    # 装一份 Chrome for Testing 到 ~/.cache/puppeteer
 ```
 > 三个脚本的默认页面都是 `assets/skeleton.html`（代码里的默认值），所以 `npm i` 之后**立刻就能跑通**。文件头注释里写的例子是 `HTML=film/index.html`——那是「你把骨架复制成自己的片子之后」的用法，不是默认值。
-## 2. `assets/render.mjs`：逐帧渲染器（119 行）
+## 2. `assets/render.mjs`：逐帧渲染器（120 行）
 ```bash
 node assets/render.mjs [输出目录=frames] [seed=7] [宽度] [标签页数=4]
 ```
@@ -101,7 +101,7 @@ W=960 OUT=/tmp/look node assets/shot.mjs 419
 HTML=/tmp/sk-card.html node assets/shot.mjs 200 300
 ```
 **这一条命令是迭代的主力**：单帧 0.5 秒左右，比整片快两个数量级。
-## 4. `assets/build.sh`：编码 + 打标 + 校验（60 行）
+## 4. `assets/build.sh`：编码 + 打标 + 校验（61 行）
 ```bash
 bash assets/build.sh          # 或 npm run build
 ```

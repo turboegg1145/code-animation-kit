@@ -78,7 +78,7 @@ npm run build        # -> out/film.mp4（并自动校验帧数、时长、色彩
 | 症状 | 原因 |
 |---|---|
 | 报 `drawImage: The provided value is not of type '(CSSImageValue or HTMLCanvasElement …)'` | `cvs()` 返回画布，`wipe(cvs(...).getContext('2d'))` 返回上下文，两个不能混用 |
-| 拉片里某几格是黑的 / 递归爆栈 | 联系表采样全片，而某段自己又要建联系表 → 加 `IN_SHEET` 闸门；嵌套渲染要换内容画布（`DEPTH`） |
+| 拉片里某几格是黑的 / 递归爆栈 | 联系表采样全片，而某段自己又要建联系表 → 加一个"正在渲染中"的布尔闸门（骨架里叫 `DEPTH`，成品片里还多一个 `IN_SHEET`）；嵌套渲染必须换一块内容画布，否则内层 resize 会擦掉外层 |
 | 一段动画整段不出现 | 局部帧减了全局帧（`S.i - (T0+X)` 得到负数） |
 | 同一帧在不同标签页颜色不一样 | 没加 `--disable-accelerated-2d-canvas` |
 | canvas 画中文是空白且不报错 | 没装中文字体（`fc-list :lang=zh` 为 0） |

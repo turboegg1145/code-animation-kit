@@ -8,7 +8,7 @@
      node render.mjs [输出目录=frames] [seed=7] [宽度] [标签页数=4]
 
    环境变量：
-     HTML=film/index.html   要渲染的页面
+     HTML=assets/skeleton.html   要渲染的页面
      AR=16:9                画幅（页面按它决定 16:9 还是 9:16 的构图）
      START=0 END=720        只渲一段
      RESUME=1               跳过已经存在的帧（断了接着渲）
