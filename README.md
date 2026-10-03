@@ -33,7 +33,11 @@
 
 ```bash
 npm i
-npx puppeteer browsers install chrome     # WSL/Debian 还要一堆 libnss3 之类的，见 references/03-render.md
+# 还要一个 Chrome——用系统装的那个，别用缓存（见下）
+sudo apt install -y ./google-chrome-stable_current_amd64.deb
+#   .deb 下载：curl -sSL -O https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+#   没有 sudo：dpkg-deb -x <deb> ~/.local/opt/google-chrome-stable && ln -sf ~/.local/opt/google-chrome-stable/opt/google/chrome/chrome ~/.local/bin/google-chrome
+#   WSL/Debian 还缺一堆 libnss3 之类的运行库，见 references/03-render.md
 
 npm run shot -- 0 60 120     # 只渲染 3 帧，先看清楚再往下走
 npm run sheet                # 24 格拉片 -> shots/sheet.png

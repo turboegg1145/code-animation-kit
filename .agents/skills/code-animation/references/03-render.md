@@ -16,7 +16,12 @@ npm run demo                 # sheet + render + build
 前置条件（一次性）：
 ```bash
 npm i                                    # 只装 puppeteer-core（^23.0.0），零其它依赖
-npx puppeteer browsers install chrome    # 装一份 Chrome for Testing 到 ~/.cache/puppeteer
+# 装一个正经的 Chrome（三选一，脚本都认）
+sudo apt install -y ./google-chrome-stable_current_amd64.deb   # ① 推荐：官方 .deb -> /usr/bin/google-chrome
+#   下载：curl -sSL -O https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+dpkg-deb -x google-chrome-stable_current_amd64.deb ~/.local/opt/google-chrome-stable   # ② 没有 sudo：
+ln -sf ~/.local/opt/google-chrome-stable/opt/google/chrome/chrome ~/.local/bin/google-chrome
+npx puppeteer browsers install chrome                          # ③ 下到 ~/.cache/puppeteer（能用，但那是缓存目录）
 ```
 > 两个渲染脚本找页面的顺序是：**项目根有 `film/index.html` 就用它，没有才用技能包自带的 `resources/skeleton.html`**。所以在这个仓库里 `npm i` 之后立刻就能跑通；在你自己的项目里把片子放成 `film/index.html` 即可，不用每次写 `HTML=`。
 ## 2. `scripts/render.mjs`：逐帧渲染器（120 行）
@@ -51,9 +56,12 @@ node scripts/render.mjs /tmp/look 12 960 4       # 换种子、换宽度、换�
 | `SHEET_FROM` | `0` | 拉片采样起点 |
 | `SHEET_TO` | `total-1` | 拉片采样终点 |
 | `CHROME` | 空 | Chrome 可执行文件路径（优先级最高） |
-**Chrome 的查找顺序**（`findChrome()`）：`CHROME` 环境变量 → `$HOME/.cache/puppeteer/chrome/*` 里**按版本号倒序**找 `chrome-linux64/chrome`、`chrome-linux/chrome` → `/usr/bin/google-chrome`、`/usr/bin/chromium`、`/usr/bin/chromium-browser`、`/snap/bin/chromium` → 都没有则：
+**Chrome 的查找顺序**（`findChrome()`）：`CHROME` / `CHROME_BIN` 环境变量 → **系统里装的那些**（`/usr/bin/google-chrome`、`/usr/bin/google-chrome-stable`、`/opt/google/chrome/chrome`、`~/.local/bin/google-chrome`、`~/.local/opt/google-chrome-stable/opt/google/chrome/chrome`、`/usr/bin/chromium`、`/snap/bin/chromium`、brave、edge）→ 都没有才用 `$HOME/.cache/puppeteer/chrome/*` 里**按版本号倒序**找到的 `chrome-linux64/chrome`。
+> 顺序是**系统优先**：正经装的 Chrome 会跟着系统更新，而 `.cache/` 里的那份是死的、还可能被清理工具删掉。
+> 实测过：用系统 Chrome（154.0.8037.97）和用 puppeteer 下到缓存里的（154.0.8037.57）渲染同一帧，
+> 与已编码 mp4 解码帧的平均差 1.58/255、最大 9——差异全部来自 x264 有损压缩，不是浏览器。
 ```
-找不到 Chrome：设 CHROME=/path/to/chrome，或运行 npx puppeteer browsers install chrome
+找不到 Chrome：装一个（apt install google-chrome-stable，或 npx puppeteer browsers install chrome），或用 CHROME=/path/to/chrome 指定
 ```
 **启动参数（逐字，和 `shot.mjs` 一致）**：
 ```js
@@ -236,12 +244,13 @@ ffprobe -v error -select_streams v:0 \
 ## 10. 环境依赖：Chrome、字体、apt 包
 ### 10.1 Chrome
 ```bash
-npx puppeteer browsers install chrome
+google-chrome --version                                  # 系统装的：Google Chrome 154.0.8037.97
+npx puppeteer browsers install chrome                    # 或用缓存里那份
 ls ~/.cache/puppeteer/chrome/*/chrome-linux64/chrome     # 例如 linux-154.0.8037.57/chrome-linux64/chrome
 ```
 想用手头已有的浏览器：
 ```bash
-CHROME=/usr/bin/google-chrome node scripts/render.mjs frames 7
+CHROME=/usr/bin/google-chrome node scripts/render.mjs frames 7   # 一般不用设，findChrome 会自己找到
 ```
 ### 10.2 WSL / Debian / Ubuntu 上的浏览器依赖
 无头 Chrome 在最小化的 WSL/Debian 里会因为缺 `.so` 起不来，症状是 `Failed to launch the browser process` 或一段 `error while loading shared libraries`。
@@ -304,7 +313,7 @@ START=390 END=570 node scripts/render.mjs frames 7
 
 | 症状 | 原因 | 改法 |
 |---|---|---|
-| `找不到 Chrome：设 CHROME=…` | 没装浏览器或路径不对 | `npx puppeteer browsers install chrome`，或 `CHROME=…` |
+| `找不到 Chrome：…` | 没装浏览器或路径不对 | `sudo apt install ./google-chrome-stable_*.deb`（或无 sudo 解到 `~/.local/opt/`），或 `CHROME=…` |
 | `没有这个文件：…（用 HTML= 指定）` | `HTML=` 指错了 | 默认按 `film/index.html` → 技能包 `resources/skeleton.html` 的顺序找；用 `HTML=` 可以显式指定 |
 | 卡在 `waitForFunction('window.__ready===true')` 后超时 | 页面里有 JS 报错，`boot()` 没走到最后一行 | 看 `页面报错：` 那行；先在浏览器里打开同一个 URL |
 | 中文全是空白（但英文正常） | 没装中文字体 | `fc-list :lang=zh` → `apt install fonts-noto-cjk` |

@@ -25,7 +25,11 @@
 ## 命令
 
 ```bash
-npm i && npx puppeteer browsers install chrome   # 首次（WSL/Debian 还要装一堆 libnss3 之类，见 references/03-render.md）
+npm i                     # 首次
+# 外加一个 Chrome：优先用系统装的（apt install ./google-chrome-stable_*.deb，
+#   或无 sudo 时 dpkg-deb -x 到 ~/.local/opt/google-chrome-stable）。
+#   `npx puppeteer browsers install chrome` 也行——脚本会按 CHROME -> 系统路径 -> ~/.cache/puppeteer 的顺序找。
+#   WSL/Debian 还缺一堆 libnss3 之类的运行库，见 references/03-render.md
 
 npm run shot -- 0 60 120   # 只看三帧（迭代主力，比全片快两个数量级）
 npm run sheet              # 24 格拉片自检（QA 门）-> shots/sheet.png
