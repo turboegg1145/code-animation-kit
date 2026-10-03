@@ -59,6 +59,8 @@ Antigravity 与 Claude Code 都认），外加一份 `AGENTS.md`。三种用法�
 **② 全局安装**（任何项目都能用）：
 
 ```bash
+# DeepSeek Harness，以及任何读 ~/.agents/skills 的 agent（跨工具的约定位置）
+mkdir -p ~/.agents/skills        && cp -r .agents/skills/code-animation ~/.agents/skills/
 # Antigravity 2.0 / CLI
 mkdir -p ~/.gemini/config/skills && cp -r .agents/skills/code-animation ~/.gemini/config/skills/
 # Claude Code（同一个包，同一个开放标准）
@@ -66,6 +68,15 @@ mkdir -p ~/.claude/skills        && cp -r .agents/skills/code-animation ~/.claud
 ```
 
 装完之后直接说需求，或在对话里打 `/code-animation` 显式调用。
+
+全局装的技能包在**别的项目**里也能直接跑：`scripts/` 先找技能包自己的 `node_modules`，找不到就回退到
+**当前运行目录**的 `node_modules`。所以在任意项目里 `npm i puppeteer-core` 之后：
+
+```bash
+cd 任意项目
+npm i puppeteer-core
+node ~/.agents/skills/code-animation/scripts/shot.mjs 0      # 项目里没有 film/index.html 就用技能包自带的骨架
+```
 
 **③ 开一部新片子**：把工具拷进新项目，让 agent 照技能执行。
 

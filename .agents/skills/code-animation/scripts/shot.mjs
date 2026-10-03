@@ -29,13 +29,18 @@ ENV
 
 let puppeteer;
 try {
-  ({ default: puppeteer } = await import('puppeteer-core'));
+  ({ default: puppeteer } = await import('puppeteer-core'));   // ① 技能包自带 / 项目里的 node_modules
 } catch {
-  console.error('缺依赖：先在这个仓库根目录跑 `npm i`（需要 puppeteer-core）。');
-  process.exit(1);
+  try {
+    // ② 回退到「当前运行目录」的 node_modules：技能包全局安装后被别的项目调用时走这条
+    const { createRequire } = await import('node:module');
+    puppeteer = createRequire(path.join(process.cwd(), 'noop.js'))('puppeteer-core');
+  } catch {
+    console.error('缺依赖：在当前项目跑 `npm i puppeteer-core`（或把这个技能包的 scripts/ 拷进项目）。');
+    process.exit(1);
+  }
 }
 
-const HOME = process.env.HOME || '';
 function findChrome() {
   if (process.env.CHROME) return process.env.CHROME;          // ① 显式指定优先
   if (process.env.CHROME_BIN) return process.env.CHROME_BIN;

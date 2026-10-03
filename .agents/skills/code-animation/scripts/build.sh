@@ -10,6 +10,31 @@
 #      播放器按 BT.709 解读 HD 视频，饱和色会偏（实测纯绿偏 39 个 level）
 #   3) 先写临时文件，编码成功才 rename —— 避免留下一个半截的 mp4
 set -euo pipefail
+
+if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
+  cat <<'EOF'
+NAME
+  build.sh — 用 ffmpeg 把 frames/f%05d.png 编成 out/film.mp4（有配乐就带上）
+
+USAGE
+  bash scripts/build.sh
+
+ENV
+  FPS=30                帧率（默认 30）
+  CRF=22                x264 质量，越小越好也越大
+  FRAMES=frames         帧目录
+  AUDIO=out/track.wav   配乐；文件不存在就出无声片
+  OUT=out/film.mp4      输出文件
+
+DOES
+  yuv420p + BT.709 矩阵转换与打标 + faststart；先写 .tmp.mp4，成功才改名；
+  末尾用 ffprobe 校验帧数与时长；配乐与画面时长差超过 0.05s 会警告。
+
+EXAMPLE
+  npm run render && bash scripts/build.sh
+EOF
+  exit 0
+fi
 # 切到仓库根目录：脚本在 .agents/skills/code-animation/scripts/ 下，而 frames/ out/ 都在根目录。
 # （不是 git 仓库时退回脚本所在目录。）
 cd "$(git -C "$(dirname "$0")" rev-parse --show-toplevel 2>/dev/null || dirname "$0")"
