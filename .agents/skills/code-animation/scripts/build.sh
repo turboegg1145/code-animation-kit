@@ -10,7 +10,7 @@
 #      播放器按 BT.709 解读 HD 视频，饱和色会偏（实测纯绿偏 39 个 level）
 #   3) 先写临时文件，编码成功才 rename —— 避免留下一个半截的 mp4
 set -euo pipefail
-# 切到仓库根目录：脚本在 assets/ 下，而 frames/ out/ 都在根目录。
+# 切到仓库根目录：脚本在 .agents/skills/code-animation/scripts/ 下，而 frames/ out/ 都在根目录。
 # （不是 git 仓库时退回脚本所在目录。）
 cd "$(git -C "$(dirname "$0")" rev-parse --show-toplevel 2>/dev/null || dirname "$0")"
 

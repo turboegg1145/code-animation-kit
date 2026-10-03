@@ -41,7 +41,7 @@
 | `ink` | 主体、文字 | 10–25% |
 | `paper` / 亮部 | 高光、反白文字 | 5–15% |
 | `accent` | 焦点、强调、印章 | **≤5–10%** |
-骨架里现成的四套（`assets/skeleton.html` 105–119）：
+骨架里现成的四套（`resources/skeleton.html` 105–119）：
 ```js
 const INK=Object.freeze({bg:'#e9dfc9', paper:'#f3ecdb', ink:'#2b2620', mid:'#8a7a60', light:'#fbf7ee', accent:'#a33028'});
 const P16=['#1a1c2c','#5d275d','#b13e53','#ef7d57','#ffcd75','#a7f070','#38b764','#257179',
@@ -67,7 +67,7 @@ hatch(g, x0,y0,x1,y1, LH*0.012, Math.PI/4, {color: INK.mid, alpha: 0.55});   // 
 halftone(g, x, y, w, h, LH*0.010, INK.mid, 0.5);                              // 网点灰阶
 ```
 ## 5. 缓动：线性是「没做决定」的同义词
-骨架里的缓动表（`ease`，`assets/skeleton.html` 68–76）：
+骨架里的缓动表（`ease`，`resources/skeleton.html` 68–76）：
 
 | 曲线 | 数学 | 用在哪 |
 |---|---|---|
@@ -89,7 +89,7 @@ const p = stagger(S.i, 0, BEAT*1.2, k, total, 0.8, ease.out4);
 g.globalAlpha = p;
 g.setTransform(...translate(0, (1-p)*LH*0.04)...);
 ```
-**`stagger` 的签名**（`assets/skeleton.html` 83）：
+**`stagger` 的签名**（`resources/skeleton.html` 83）：
 ```js
 function stagger(t,start,dur,i,n,spread=0.35,curve=ease.out4)
 // s = start + (n>1 ? i/(n-1) : 0) * spread;  再 curve(span(t, s, s+dur))

@@ -8,7 +8,7 @@
      node render.mjs [输出目录=frames] [seed=7] [宽度] [标签页数=4]
 
    环境变量：
-     HTML=assets/skeleton.html   要渲染的页面
+     HTML=<页面>             默认：项目里的 film/index.html，没有就用技能包自带的骨架
      AR=16:9                画幅（页面按它决定 16:9 还是 9:16 的构图）
      START=0 END=720        只渲一段
      RESUME=1               跳过已经存在的帧（断了接着渲）
@@ -17,10 +17,43 @@
    ===================================================================== */
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+
+if (process.argv.includes('--help') || process.argv.includes('-h')) {
+  console.log(`NAME
+  render.mjs — 逐帧渲染器：无头 Chrome 多标签页并行出 PNG，再交给 ffmpeg 编码
+
+USAGE
+  node scripts/render.mjs [输出目录=frames] [seed=7] [宽度] [标签页数=4]
+
+ENV
+  HTML=<页面>    默认：项目里的 film/index.html，没有就用技能包自带的 resources/skeleton.html
+  AR=16:9        画幅（页面按它决定构图）
+  START=0 END=720  只渲一段
+  RESUME=1       跳过已经存在的帧（断了接着渲）
+  SHEET=out/sheet.png    不渲染视频，只出一张拉片（联系表）
+  SHEET_N=24 SHEET_W=480 SHEET_FROM=0 SHEET_TO=719
+  CHROME=<路径>  指定 Chrome
+
+EXAMPLE
+  npm run shot -- 0 60 120      只看三帧（迭代时用这个）
+  npm run sheet                 24 格拉片自检
+  npm run render && npm run build
+`);
+  process.exit(0);
+}
+/* ---------- 依赖：放到 --help 之后再加载，让 --help 在没装依赖时也能用 ---------- */
 const require = createRequire(import.meta.url);
-const puppeteer = require('puppeteer-core');
+let puppeteer;
+try {
+  puppeteer = require('puppeteer-core');
+} catch {
+  console.error('缺依赖：先在这个仓库根目录跑 `npm i`（需要 puppeteer-core）。');
+  process.exit(1);
+}
 
 /* ---------- 找到 Chrome。优先用环境变量，其次 puppeteer 的缓存目录（最高版本） ---------- */
 function findChrome() {
@@ -50,7 +83,9 @@ function findChrome() {
 const [,, dirArg = 'frames', seedS = '7', widthS = '', tabsS = '4'] = process.argv;
 const dir = dirArg, seed = +seedS, tabs = Math.max(1, +tabsS);
 let width = +widthS;
-const html = path.resolve(process.env.HTML || 'assets/skeleton.html');
+const html = path.resolve(process.env.HTML || (fs.existsSync('film/index.html')
+  ? 'film/index.html'                      // 项目里的片子优先
+  : path.resolve(HERE, '../resources/skeleton.html')))  // 否则用技能包自带的骨架;
 if (!fs.existsSync(html)) { console.error(`没有这个文件：${html}（用 HTML= 指定）`); process.exit(1); }
 fs.mkdirSync(dir, { recursive: true });
 const url = 'file://' + html + `?f=0&w=320&s=${seed}` + (process.env.AR ? `&ar=${process.env.AR}` : '');

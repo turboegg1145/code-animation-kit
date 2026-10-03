@@ -1,5 +1,5 @@
 # 01 · 引擎解剖：九节顺序、全部 API 签名、怎么加一个分镜
-本文对应 `assets/skeleton.html`（**497 行**，可跑）。行号都是那个文件里的真实行号，改完对照着找。
+本文对应 `resources/skeleton.html`（**497 行**，可跑）。行号都是那个文件里的真实行号，改完对照着找。
 ## 0. 地图
 
 | 行号 | 节 | 干什么 |
@@ -232,11 +232,11 @@ window.RISO = {
 ```
 `boot()`（484）按 URL 分三种模式：`?grid` → 出拉片；`?f` → 单帧；什么都没有 → `requestAnimationFrame` 实时预览（宽度上限 `Math.min(WIDTH,1280)`）。结尾 `window.__ready=true`，`render.mjs` / `shot.mjs` 就是等这个标志。
 ## 10. 手把手：加一个新分镜
-**这条路径已经实测跑通**（下面代码原样贴进骨架 468 行之前，`node assets/shot.mjs 200 300 419` 正常出帧）。
+**这条路径已经实测跑通**（下面代码原样贴进骨架 468 行之前，`node scripts/shot.mjs 200 300 419` 正常出帧）。
 ### 第 1 步：决定它在时间轴上的位置和长度
 * 长度取 `BEAT` 的整数倍（`4*BAR` = 8 秒够讲一件事，`BAR` = 2 秒是一张卡）；位置就是 `plate()` 被调用的顺序——插在 `dots` 之后，它就从第 180 帧开始。
 ### 第 2 步：只画静态构图
-先把 `S.i` 当 0 用，画完出静帧：`node assets/shot.mjs 180 300`（段首 + 中段）。
+先把 `S.i` 当 0 用，画完出静帧：`node scripts/shot.mjs 180 300`（段首 + 中段）。
 ### 第 3 步：加动画、加错位、加收尾
 ```js
 /* 分镜 · 数据卡（接在 dots 之后 = 第 180 帧起，长 8 秒） */
@@ -278,9 +278,9 @@ const CUES=[['poster',2,'rule-in'],['dots',0,'dissolve'],['card',0,'card-in']];
 之后画面里可以用 `cue('card-in')`，配乐里用同一个名字对齐（见 04）。
 ### 第 5 步：验收
 ```bash
-node assets/shot.mjs 180 200 300 419                 # 段首/入场/中段/末帧
-SHEET=shots/sheet.png SHEET_N=24 SHEET_W=460 node assets/render.mjs frames 7   # 24 格拉片
-START=180 END=420 node assets/render.mjs frames 7 1920 4                       # 只渲这一段
+node scripts/shot.mjs 180 200 300 419                 # 段首/入场/中段/末帧
+SHEET=shots/sheet.png SHEET_N=24 SHEET_W=460 node scripts/render.mjs frames 7   # 24 格拉片
+START=180 END=420 node scripts/render.mjs frames 7 1920 4                       # 只渲这一段
 ```
 看四件事：**第 0 帧有没有东西**、**末帧有没有被转场压黑**、**有没有哪一帧说不清该看哪**、**有没有超过 2 秒的静止**。
 ## 11. 嵌套渲染：`DEPTH` 与 `IN_SHEET` 两个闸门
@@ -315,6 +315,6 @@ const txtA = IN_SHEET ? 1 : ease.out4(span(S.i, ...)); // 857：文字透明度�
 ## 12. 常见改动速查
 **帧率/速度**：`const FPS = 30` / `const BPM = 120`（`BEAT`、`BAR` 跟着变，音频侧常量要同步）。**画幅**：`?ar=9:16`（`:` `x` `/` 都收；`LW/LH/CX/CY` 全变，`contactSheet` 列数变 8）。**种子/宽度**：`?s=12` / `?w=960`，或 `render.mjs` 的第 3 个参数（随机流换一套；逻辑坐标不变，只是缩放）。**段落顺序**：调整 `plate()` 调用顺序（起始帧跟着变，用 `at()` 的地方不用改）。**末帧别被压黑**：最后一段 `cutOut:false`。
 
-改完的最小验证：`node assets/shot.mjs <该段首帧> <该段末帧>` + 一次 24 格拉片。
+改完的最小验证：`node scripts/shot.mjs <该段首帧> <该段末帧>` + 一次 24 格拉片。
 
 下一篇：[`02-style.md`](02-style.md) —— 调色板、缓动、十二法、相机。

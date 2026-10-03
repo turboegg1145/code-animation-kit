@@ -2,7 +2,7 @@
 
 > 这是开工前写的原始调研笔记，保留原样（只改了标题）。
 > 三个 MIT 开源 Agent Skill 的原理、骨架、质量方法论都在这里：framewright / every-frame-is-code / xilo-opus-video。
-> 本仓库 `assets/` 里的骨架和 `docs/01`–`docs/05` 都是从这份笔记整理出来的。
+> 本技能包 `resources/skeleton.html` 与 `references/00`–`references/05` 都是从这份笔记整理出来的。
 
 > 起因：推特上刷屏的"Opus 5.5 / GPT-6 Astra 直出视频"到底是什么。
 > 结论先行：**它们没有生成视频。** 模型写了一个会自己动的网页，再用无头浏览器一帧一帧截图，最后拿 ffmpeg 拼成 mp4。

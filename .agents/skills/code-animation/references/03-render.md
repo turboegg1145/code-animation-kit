@@ -3,31 +3,31 @@
 ## 1. 五个入口
 仓库根目录有现成的 npm 脚本（`package.json`）：
 ```bash
-npm run shot -- 0 60 120     # node assets/shot.mjs      -> shots/f00000.png …
-npm run sheet                # SHEET=shots/sheet.png SHEET_N=24 SHEET_W=460 node assets/render.mjs frames 7
-npm run render               # node assets/render.mjs frames 7     -> frames/
-npm run build                # bash assets/build.sh               -> out/film.mp4
-npm run audio                # node assets/audio.mjs              -> out/track.wav
+npm run shot -- 0 60 120     # node scripts/shot.mjs      -> shots/f00000.png …
+npm run sheet                # SHEET=shots/sheet.png SHEET_N=24 SHEET_W=460 node scripts/render.mjs frames 7
+npm run render               # node scripts/render.mjs frames 7     -> frames/
+npm run build                # bash scripts/build.sh               -> out/film.mp4
+npm run audio                # node scripts/audio.mjs              -> out/track.wav
 npm run make                 # render + build
 npm run demo                 # sheet + render + build
 ```
-约定：**脚本都在 `assets/` 下，而 `frames/` `out/` `shots/` 都在仓库根目录**，所以要么用 `npm run …`，要么先 `cd` 到仓库根再 `node assets/render.mjs …`。
+约定：**脚本都在 `.agents/skills/code-animation/scripts/` 下，而 `frames/` `out/` `shots/` 都在项目根目录**，所以要么用 `npm run …`，要么先 `cd` 到项目根再 `node <技能包>/scripts/render.mjs …`。
 
 前置条件（一次性）：
 ```bash
 npm i                                    # 只装 puppeteer-core（^23.0.0），零其它依赖
 npx puppeteer browsers install chrome    # 装一份 Chrome for Testing 到 ~/.cache/puppeteer
 ```
-> 三个脚本的默认页面都是 `assets/skeleton.html`（代码里的默认值），所以 `npm i` 之后**立刻就能跑通**。文件头注释里写的例子是 `HTML=film/index.html`——那是「你把骨架复制成自己的片子之后」的用法，不是默认值。
-## 2. `assets/render.mjs`：逐帧渲染器（120 行）
+> 两个渲染脚本找页面的顺序是：**项目根有 `film/index.html` 就用它，没有才用技能包自带的 `resources/skeleton.html`**。所以在这个仓库里 `npm i` 之后立刻就能跑通；在你自己的项目里把片子放成 `film/index.html` 即可，不用每次写 `HTML=`。
+## 2. `scripts/render.mjs`：逐帧渲染器（120 行）
 ```bash
-node assets/render.mjs [输出目录=frames] [seed=7] [宽度] [标签页数=4]
+node scripts/render.mjs [输出目录=frames] [seed=7] [宽度] [标签页数=4]
 ```
 例：
 ```bash
-node assets/render.mjs frames 7                 # 1920 宽、4 个标签页
-node assets/render.mjs frames 7 1920 1          # 单标签页（排查用）
-node assets/render.mjs /tmp/look 12 960 4       # 换种子、换宽度、换目录
+node scripts/render.mjs frames 7                 # 1920 宽、4 个标签页
+node scripts/render.mjs frames 7 1920 1          # 单标签页（排查用）
+node scripts/render.mjs /tmp/look 12 960 4       # 换种子、换宽度、换目录
 ```
 
 | 位置参数 | 默认 | 含义 |
@@ -40,7 +40,7 @@ node assets/render.mjs /tmp/look 12 960 4       # 换种子、换宽度、换目
 
 | 变量 | 默认 | 作用 |
 |---|---|---|
-| `HTML` | `assets/skeleton.html` | 要渲染的页面（会 `path.resolve`，不存在就报 `没有这个文件：…（用 HTML= 指定）` 并退出 1） |
+| `HTML` | `resources/skeleton.html` | 要渲染的页面（会 `path.resolve`，不存在就报 `没有这个文件：…（用 HTML= 指定）` 并退出 1） |
 | `AR` | 空 | 画幅，会作为 `&ar=` 拼进 URL（`?f=0&w=320&s=7&ar=9:16`） |
 | `START` | `0` | 起始帧 |
 | `END` | `total` | 结束帧（不含）；实际取 `Math.min(total, END)` |
@@ -77,16 +77,16 @@ args: ['--allow-file-access-from-files', '--disable-accelerated-2d-canvas',
 第 417 帧失败： …
 ```
 有失败帧时最后会 `process.exit(1)`——**别忽略它**，那说明有些帧是缺的，`build.sh` 编出来的片子会跳帧。
-## 3. `assets/shot.mjs`：静帧取样（52 行）
+## 3. `scripts/shot.mjs`：静帧取样（52 行）
 ```bash
-node assets/shot.mjs <帧号...>          # -> shots/f00000.png …
+node scripts/shot.mjs <帧号...>          # -> shots/f00000.png …
 ```
 
 | 环境变量 | 默认 | 作用 |
 |---|---|---|
 | `SEED` | `7` | 种子 |
 | `W` | `1920` | 宽度 |
-| `HTML` | `assets/skeleton.html` | 页面 |
+| `HTML` | `resources/skeleton.html` | 页面 |
 | `OUT` | `shots` | 输出目录（自动建） |
 | `CHROME` | 空 | 同 render.mjs |
 和 `render.mjs` 的差异（别踩）：
@@ -96,14 +96,14 @@ node assets/shot.mjs <帧号...>          # -> shots/f00000.png …
 * 用法为空时报 `用法：node shot.mjs <帧号...>` 并退出 1。
 * 帧号可以做任何事：`0 100 250 563`，重复也行，乱序也行（这也是「可 seek」的直接体现）。
 ```bash
-node assets/shot.mjs 0 60 120
-W=960 OUT=/tmp/look node assets/shot.mjs 419
-HTML=/tmp/sk-card.html node assets/shot.mjs 200 300
+node scripts/shot.mjs 0 60 120
+W=960 OUT=/tmp/look node scripts/shot.mjs 419
+HTML=/tmp/sk-card.html node scripts/shot.mjs 200 300
 ```
 **这一条命令是迭代的主力**：单帧 0.5 秒左右，比整片快两个数量级。
-## 4. `assets/build.sh`：编码 + 打标 + 校验（61 行）
+## 4. `scripts/build.sh`：编码 + 打标 + 校验（61 行）
 ```bash
-bash assets/build.sh          # 或 npm run build
+bash scripts/build.sh          # 或 npm run build
 ```
 
 | 环境变量 | 默认 | 作用 |
@@ -117,7 +117,7 @@ bash assets/build.sh          # 或 npm run build
 ```bash
 cd "$(git -C "$(dirname "$0")" rev-parse --show-toplevel 2>/dev/null || dirname "$0")"
 ```
-所以 `bash assets/build.sh` 在任何子目录里都能跑；不是 git 仓库时退回脚本所在目录。
+所以 `bash scripts/build.sh` 在任何子目录里都能跑；不是 git 仓库时退回脚本所在目录。
 
 **音画时长一致性检查**（有音频时才做）：拿 `ffprobe` 读音频时长与 `N/FPS` 比，差超过 0.05 s 就警告：
 ```
@@ -191,7 +191,7 @@ ffprobe -v error -select_streams v:0 \
 ```
 **PNG 帧本身是 sRGB/full range**，所以「scale 到 limited」这一步不能省；只打标记不转范围，暗部和亮部会被切。
 ## 8. URL 旋钮（浏览器调试用）
-直接打开 `assets/skeleton.html`（`file://` 就行），或者给无头脚本拼 URL：
+直接打开 `resources/skeleton.html`（`file://` 就行），或者给无头脚本拼 URL：
 
 | 旋钮 | 例子 | 作用 |
 |---|---|---|
@@ -221,7 +221,7 @@ ffprobe -v error -select_streams v:0 \
 
 > 仓库 README 里写的「1920×1080 单帧 175–300 ms」是**乐观值**（更快的机器 / 更轻的后处理）。在本机 4 核实测是 0.47–0.71 s/帧。**做时间预算时按你自己的机器实测一遍**，命令：
 > ```bash
-> HTML=assets/skeleton.html W=1920 OUT=/tmp/perf node assets/shot.mjs 0 30 90 120 179
+> HTML=resources/skeleton.html W=1920 OUT=/tmp/perf node scripts/shot.mjs 0 30 90 120 179
 > ```
 > 输出末尾的秒数 ÷ 帧数就是单帧耗时。
 
@@ -241,7 +241,7 @@ ls ~/.cache/puppeteer/chrome/*/chrome-linux64/chrome     # 例如 linux-154.0.80
 ```
 想用手头已有的浏览器：
 ```bash
-CHROME=/usr/bin/google-chrome node assets/render.mjs frames 7
+CHROME=/usr/bin/google-chrome node scripts/render.mjs frames 7
 ```
 ### 10.2 WSL / Debian / Ubuntu 上的浏览器依赖
 无头 Chrome 在最小化的 WSL/Debian 里会因为缺 `.so` 起不来，症状是 `Failed to launch the browser process` 或一段 `error while loading shared libraries`。
@@ -287,25 +287,25 @@ const F_CJK ='"Noto Sans CJK SC","Noto Sans SC","WenQuanYi Micro Hei","DejaVu Sa
 ## 11. 断点续渲与分段
 ```bash
 # 渲到一半断了：接着渲，已有的帧自动跳过
-RESUME=1 node assets/render.mjs frames 7
+RESUME=1 node scripts/render.mjs frames 7
 
 # 只想重渲被改过的那一段（第 390–570 帧）
-START=390 END=570 node assets/render.mjs frames 7
+START=390 END=570 node scripts/render.mjs frames 7
 
 # 换种子重出一版，不覆盖旧的
-node assets/render.mjs /tmp/v2 12 1920 4
+node scripts/render.mjs /tmp/v2 12 1920 4
 ```
 `RESUME` 的判定是「文件存在就跳过」，所以它**不会**发现「帧存在但内容过期」。改过某段代码之后要重渲那一段，正确做法是删掉那几帧（或换目录）：
 ```bash
 rm -f frames/f00{390..570}.png        # 注意前面的 0 位数：文件名是 f%05d
-START=390 END=570 node assets/render.mjs frames 7
+START=390 END=570 node scripts/render.mjs frames 7
 ```
 ## 12. 排错对照表
 
 | 症状 | 原因 | 改法 |
 |---|---|---|
 | `找不到 Chrome：设 CHROME=…` | 没装浏览器或路径不对 | `npx puppeteer browsers install chrome`，或 `CHROME=…` |
-| `没有这个文件：…（用 HTML= 指定）` | `HTML=` 指错了 | 默认是 `assets/skeleton.html`；自己的片子用 `HTML=film/index.html` |
+| `没有这个文件：…（用 HTML= 指定）` | `HTML=` 指错了 | 默认按 `film/index.html` → 技能包 `resources/skeleton.html` 的顺序找；用 `HTML=` 可以显式指定 |
 | 卡在 `waitForFunction('window.__ready===true')` 后超时 | 页面里有 JS 报错，`boot()` 没走到最后一行 | 看 `页面报错：` 那行；先在浏览器里打开同一个 URL |
 | 中文全是空白（但英文正常） | 没装中文字体 | `fc-list :lang=zh` → `apt install fonts-noto-cjk` |
 | 同一帧在不同标签页颜色不一样 | 没加 `--disable-accelerated-2d-canvas` | 用仓库里的 `render.mjs`（已带） |

@@ -1,8 +1,39 @@
 /* 静帧取样：node shot.mjs 0 100 250 563 ...  -> shots/f00000.png
-   给人眼看的自检工具，比整片渲染快得多。 */
-import puppeteer from 'puppeteer-core';
+   给人眼看的自检工具，比整片渲染快得多。参数见 --help。 */
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+
+if (process.argv.includes('--help') || process.argv.includes('-h')) {
+  console.log(`NAME
+shot.mjs — 静帧取样：只渲染指定的几帧，迭代时用这个
+
+USAGE
+  node scripts/shot.mjs <帧号...>
+
+ENV
+  HTML=<页面>     默认：项目里的 film/index.html，没有就用技能包自带的 resources/skeleton.html
+  AR=16:9         画幅
+  SEED=7          种子
+  W=1920          输出宽度（shot.mjs 用 W）
+  START=0 END=720 只渲一段
+  RESUME=1        跳过已存在的帧
+  SHEET=out/sheet.png   只出一张拉片，不渲染视频
+  SHEET_N=24 SHEET_W=480 SHEET_FROM=0 SHEET_TO=719
+  CHROME=<路径>   指定 Chrome
+`);
+  process.exit(0);
+}
+
+let puppeteer;
+try {
+  ({ default: puppeteer } = await import('puppeteer-core'));
+} catch {
+  console.error('缺依赖：先在这个仓库根目录跑 `npm i`（需要 puppeteer-core）。');
+  process.exit(1);
+}
 
 const HOME = process.env.HOME || '';
 function findChrome() {
@@ -23,11 +54,14 @@ function findChrome() {
   throw new Error('找不到 Chrome');
 }
 
+
 const frames = process.argv.slice(2).map(Number).filter(n => !Number.isNaN(n));
 if (!frames.length) { console.error('用法：node shot.mjs <帧号...>'); process.exit(1); }
 const seed = +(process.env.SEED || 7);
 const width = +(process.env.W || 1920);
-const html = path.resolve(process.env.HTML || 'assets/skeleton.html');
+const html = path.resolve(process.env.HTML || (fs.existsSync('film/index.html')
+  ? 'film/index.html'                      // 项目里的片子优先
+  : path.resolve(HERE, '../resources/skeleton.html')))  // 否则用技能包自带的骨架;
 const outDir = process.env.OUT || 'shots';
 fs.mkdirSync(outDir, { recursive: true });
 

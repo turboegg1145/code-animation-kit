@@ -1,8 +1,8 @@
 # 04 · 配乐：纯 Node 手写合成，和画面共用同一条节拍网格
-`assets/audio.mjs`（744 行）是一个**不依赖任何库**的加法合成器：手写振荡器、包络、滤波器、乐器、编曲、母带，最后手写 WAV 头输出 16bit PCM。它证明的是「配乐也不必用素材」——和画面一样，全是代码。
+`scripts/audio.mjs`（744 行）是一个**不依赖任何库**的加法合成器：手写振荡器、包络、滤波器、乐器、编曲、母带，最后手写 WAV 头输出 16bit PCM。它证明的是「配乐也不必用素材」——和画面一样，全是代码。
 ## 1. 产物规格（实测）
 ```bash
-node assets/audio.mjs        # 或 npm run audio
+node scripts/audio.mjs        # 或 npm run audio
 ```
 ```
 —— 合成完成 ——
@@ -35,7 +35,7 @@ MD5        : ba8faee94012d56b3c49862f52831b34
 ```js
 const OUT_PATH = resolve('out/track.wav');   // 相对运行目录，和 build.sh / render.mjs 一致
 ```
-是**相对当前工作目录**，不是相对脚本目录。所以要么在仓库根跑 `node assets/audio.mjs`，要么用 `npm run audio`（npm 会把 cwd 设成包根）。在 `assets/` 里跑会在 `assets/out/` 下多出一份。
+是**相对当前工作目录**，不是相对脚本目录。所以要么在仓库根跑 `node scripts/audio.mjs`，要么用 `npm run audio`（npm 会把 cwd 设成包根）。在 `scripts/` 里跑会在 `out/` 下多出一份。
 ## 2. 十分钟地图（六节 + 行号）
 文件自己的结构注释：
 ```
@@ -184,7 +184,7 @@ const chordAt = (beat) => PROG[(((Math.floor((beat - PROG_ORIGIN) / 2) % 4) + 4)
 ```js
 const BPM = 120;      // 27 行
 ```
-改完必须**同步改页面里的 BPM**（`assets/skeleton.html` 的参数节：`const FPS = 30, BPM = 120;`），否则画面的节拍网格和音乐错位。三个常见选择：
+改完必须**同步改页面里的 BPM**（`resources/skeleton.html` 的参数节：`const FPS = 30, BPM = 120;`），否则画面的节拍网格和音乐错位。三个常见选择：
 
 | BPM | 一拍 | 一拍帧数 @30fps | 适合 |
 |---|---|---|---|
@@ -212,8 +212,8 @@ const SEC_INK = 0, SEC_PIXEL = S(12), SEC_TYPE = S(26), SEC_OUTRO = S(38), SEC_E
 ```
 **核对步骤**（每次改完都做）：
 ```bash
-node assets/audio.mjs          # 看「时长 : 24.000 s」
-bash assets/build.sh           # 看「配乐 out/track.wav（24.000000s，与画面一致）」
+node scripts/audio.mjs          # 看「时长 : 24.000 s」
+bash scripts/build.sh           # 看「配乐 out/track.wav（24.000000s，与画面一致）」
 ```
 `build.sh` 的音画时长检查容差是 0.05 s——差超过就打印 ⚠️ 并告诉你改哪里。
 ### 给 6 秒骨架片配乐（完整例子）
@@ -233,8 +233,8 @@ const N = DUR * SR;                                                   // 32 行�
 | 8–12 | type 段：四踩 + `clap` + riser 到第 11 拍，11.5 拍处落一个 `crash` + Am 解决和弦 |
 改完两个命令验收：
 ```bash
-node assets/audio.mjs            # 时长必须是 6.000 s
-bash assets/build.sh             # 必须打印「配乐 out/track.wav（6.000000s，与画面一致）」
+node scripts/audio.mjs            # 时长必须是 6.000 s
+bash scripts/build.sh             # 必须打印「配乐 out/track.wav（6.000000s，与画面一致）」
 ```
 ## 10. 听感局限（实测，别吹）
 1. **动态范围被压扁**。峰值 -1.50 dBFS、整体 RMS -14.70 dBFS，两者只差 **13.2 dB**（这就是 README 里说的「约 14 dB」）。原因是 5.1 的 `tanh` 软削波 + 5.2 的整体归一化：任何一段想做成「耳语」，最后都会被拉到差不多的响度。
@@ -258,7 +258,7 @@ bash assets/build.sh             # 必须打印「配乐 out/track.wav（6.00000
 ## 11. 校验与复现
 ```bash
 # 可复现性（同一台机器）
-node assets/audio.mjs | grep MD5      # 连跑两次必须是同一个值
+node scripts/audio.mjs | grep MD5      # 连跑两次必须是同一个值
 # MD5        : ba8faee94012d56b3c49862f52831b34
 
 # 规格（用 ffprobe 而不是耳朵）
@@ -298,13 +298,13 @@ for (let b = 8; b < 20; b++) {
 
 1. **定位只用 `S(拍)`**，不要用「上一件事结束的位置」。
 2. **音色处理是原地函数**（`lp1` / `hp1` 改的是同一个 `Float32Array`），所以 `osc(...)` 出来的 buffer 可以放心改——它每次都是新的。
-3. **写完之后立刻 `node assets/audio.mjs` 看每秒 RMS**：如果某一段的 RMS 比邻居高 6 dB 以上，说明配器堆太满了（听感上会「糊」）。
+3. **写完之后立刻 `node scripts/audio.mjs` 看每秒 RMS**：如果某一段的 RMS 比邻居高 6 dB 以上，说明配器堆太满了（听感上会「糊」）。
 ## 13. 速查
 ```bash
-node assets/audio.mjs                                  # -> out/track.wav（24.000 s，MD5 可复现）
-DBG=1 node assets/audio.mjs                            # 额外打印母带前峰值
+node scripts/audio.mjs                                  # -> out/track.wav（24.000 s，MD5 可复现）
+DBG=1 node scripts/audio.mjs                            # 额外打印母带前峰值
 ffprobe … out/track.wav                                # 规格
-bash assets/build.sh                                   # 编码时自动检查音画时长是否一致
+bash scripts/build.sh                                   # 编码时自动检查音画时长是否一致
 ```
 
 | 想改什么 | 改哪里 |

@@ -7,7 +7,7 @@ frame(n, width, seed) -> 一张图
 ```
 同一个 `(n, width, seed)` 永远得到同一张图。没有「上一帧」，没有全局时间，没有累积状态。
 
-`assets/skeleton.html` 里对外的唯一接口是 `window.RISO.frame()`：
+`resources/skeleton.html` 里对外的唯一接口是 `window.RISO.frame()`：
 ```js
 window.RISO.frame(n, width, seed)   // 渲染第 n 帧，返回 canvas.toDataURL('image/png')
 ```
@@ -20,8 +20,8 @@ function renderFrame(n, width, seed, target)
 ### 1.1 可以 seek
 任何一帧都能单独渲染，不必从第 0 帧跑过来。
 ```bash
-node assets/shot.mjs 0 60 120          # 只要这 3 帧 -> shots/f00000.png f00060.png f00120.png
-W=960 OUT=/tmp/look node assets/shot.mjs 522     # 24 秒片的 17.4s 处，改一下宽度重看
+node scripts/shot.mjs 0 60 120          # 只要这 3 帧 -> shots/f00000.png f00060.png f00120.png
+W=960 OUT=/tmp/look node scripts/shot.mjs 522     # 24 秒片的 17.4s 处，改一下宽度重看
 ```
 * 拉片（联系表）靠这个能力成立：24 格 = 全片均匀撒 24 个采样点，每格独立渲染。
 * `SHEET_FROM` / `SHEET_TO` / `START` / `END` 可以框任意窗口：只重渲被改过的那 90 帧。
@@ -41,7 +41,7 @@ W=960 OUT=/tmp/look node assets/shot.mjs 522     # 24 秒片的 17.4s 处，改�
 | 成品 24 秒片 `film/index.html` | 421–586 ms（phos 段自渲染联系表那一帧 1316 ms） |
 结论：**贵的是逐像素后处理，不是画图形**。这条实测直接决定了工作方式——先把构图做对，最后再开颗粒和暗角。
 ### 1.3 确定性可复现
-* 音频侧有硬证据：`node assets/audio.mjs` 连跑两次，WAV 的 md5 都是 `ba8faee94012d56b3c49862f52831b34`。
+* 音频侧有硬证据：`node scripts/audio.mjs` 连跑两次，WAV 的 md5 都是 `ba8faee94012d56b3c49862f52831b34`。
 * 画面侧靠纪律：`hash()` / `rng()` 代替 `Math.random()`，随机流掺段落名（见 01），Chrome 带 `--disable-accelerated-2d-canvas`。
 * 实际收益：改了 3 秒处的一个字，不用担心 20 秒处跟着变；改完可以把「改动后的 6 帧」单独提出来给人看。
 * **多标签页并行是安全的**：`render.mjs` 默认开 4 个标签页抢帧，谁先空谁取下一帧，结果与取帧顺序无关。这是纯函数白送的能力，不是额外工程。
@@ -76,7 +76,7 @@ const jittered = boil(linePts, S.b, 3.2);   // 3 帧内线不动，第 4 帧整�
 ```
 这是「手绘感」在代码里最省的做法：不是让线每帧乱抖（那是噪点），而是每 3 帧换一个整体偏移（那是手抖）。
 ### 3.3 回弹 / 弹簧：闭式解，不积分
-骨架里的签名（`assets/skeleton.html`）：
+骨架里的签名（`resources/skeleton.html`）：
 ```js
 function spring(t, zeta = 0.42, omega = 15) {
   if (t <= 0) return 0;
@@ -144,25 +144,25 @@ function cue(name)            // -> 全局帧号：CUES 里登记的提示点，
 * 不适用：写实视频、真人素材剪辑、需要精确对白的口播。
 * 超过 2 分钟要慎重：720 帧 @1920 已经约 3.5 分钟；2 分钟 = 3600 帧，渲染时间按比例涨。
 * 文字是强项（毕竟是在写代码画字），复杂物理 / 写实材质是弱项。
-* 配乐另算：`assets/audio.mjs` 是纯 Node 手写加法合成（见 04）。
+* 配乐另算：`scripts/audio.mjs` 是纯 Node 手写加法合成（见 04）。
 ## 8. 怎么证明你的片子真是纯函数（三个实验）
 **实验 A：同一帧渲两次，比 md5**
 ```bash
 cd /home/eggdog/项目/code-animation-kit
-node assets/shot.mjs 0 60 120 && md5sum shots/f00000.png shots/f00060.png
-node assets/shot.mjs 0 60 120 && md5sum shots/f00000.png shots/f00060.png
+node scripts/shot.mjs 0 60 120 && md5sum shots/f00000.png shots/f00060.png
+node scripts/shot.mjs 0 60 120 && md5sum shots/f00000.png shots/f00060.png
 # 两行必须完全一致
 ```
 **实验 B：seek 一致性（乱序渲染不改变像素）**
 ```bash
-SEED=7 OUT=/tmp/seekA node assets/shot.mjs 120 0 60      # 乱序
-SEED=7 OUT=/tmp/seekB node assets/shot.mjs 0 60 120      # 顺序
+SEED=7 OUT=/tmp/seekA node scripts/shot.mjs 120 0 60      # 乱序
+SEED=7 OUT=/tmp/seekB node scripts/shot.mjs 0 60 120      # 顺序
 cmp /tmp/seekA/f00060.png /tmp/seekB/f00060.png && echo "seek 一致"
 ```
 **实验 C：并行一致性（多标签页只影响顺序，不影响像素）**
 ```bash
-HTML=assets/skeleton.html START=0 END=30 node assets/render.mjs /tmp/par1 7 960 1
-HTML=assets/skeleton.html START=0 END=30 node assets/render.mjs /tmp/par2 7 960 4
+HTML=resources/skeleton.html START=0 END=30 node scripts/render.mjs /tmp/par1 7 960 1
+HTML=resources/skeleton.html START=0 END=30 node scripts/render.mjs /tmp/par2 7 960 4
 for n in $(seq -w 0 29); do cmp -s /tmp/par1/f000$n.png /tmp/par2/f000$n.png || echo "第 $n 帧不一致"; done
 ```
 三个实验都过，才谈得上「这套片子是可以 re-render 的」。

@@ -5,11 +5,11 @@
   "type": "module",
   "description": "用代码逐帧生成动画短片的工具链：一个 HTML、一块画布、一个 draw(t)，无头 Chrome 逐帧渲染 + ffmpeg 编码 + 纯 Node 合成配乐。",
   "scripts": {
-    "shot": "node assets/shot.mjs",
-    "sheet": "SHEET=shots/sheet.png SHEET_N=24 SHEET_W=460 node assets/render.mjs frames 7",
-    "render": "node assets/render.mjs frames 7",
-    "build": "bash assets/build.sh",
-    "audio": "node assets/audio.mjs",
+    "shot": "node .agents/skills/code-animation/scripts/shot.mjs",
+    "sheet": "SHEET=shots/sheet.png SHEET_N=24 SHEET_W=460 node .agents/skills/code-animation/scripts/render.mjs frames 7",
+    "render": "node .agents/skills/code-animation/scripts/render.mjs frames 7",
+    "build": "bash .agents/skills/code-animation/scripts/build.sh",
+    "audio": "node .agents/skills/code-animation/scripts/audio.mjs",
     "make": "npm run render && npm run build",
     "demo": "npm run sheet && npm run render && npm run build"
   },
