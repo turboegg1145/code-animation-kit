@@ -18,6 +18,7 @@ MD5        : ba8faee94012d56b3c49862f52831b34
              pixel 段 chiptune 律动(6-13s)、type 段四踩推进 + riser(13-19s)、
              outro 段撞击 + 暖 pad + 延迟拨弦(19-24s)，峰值归一化 -1.5 dBFS，tanh 软削波。
 ```
+
 | 项 | 值 |
 |---|---|
 | 采样率 / 声道 / 位深 | 44100 Hz / 立体声 / 16bit PCM |
@@ -40,6 +41,7 @@ const OUT_PATH = resolve('out/track.wav');   // 相对运行目录，和 build.s
 ```
 0 常量 → 1 随机数/噪声 → 2 基础工具（振荡器/包络/滤波器/总线）→ 3 乐器 → 4 编曲 → 5 母带 → 6 WAV 编码与输出
 ```
+
 | 节 | 行号 | 内容 |
 |---|---|---|
 | 0 常量 | 25–47 | `SR/BPM/BEAT/BAR/FPS/DUR/N`、`OUT_PATH`、`S()`、`sLen()`、`SEC_*` |
@@ -76,6 +78,7 @@ const SEC_INK = 0, SEC_PIXEL = S(12), SEC_TYPE = S(26), SEC_OUTRO = S(38), SEC_E
 const INK_END = SEC_PIXEL;   // 6.0 s  = 264,600
 const TYPE_END = SEC_OUTRO;  // 19.0 s = 837,900
 ```
+
 | 画面 plate | 帧范围 | 时间 | 拍 | 音频段 |
 |---|---|---|---|---|
 | `ink` | 0–179 | 0.0–6.0 s | 0–12 | drone + 打字机 |
@@ -103,6 +106,7 @@ const noiseAt = (k) => NOISE[((k % NOISE.length) + NOISE.length) % NOISE.length]
 1. **噪声不是「每次调用取下一段」，而是「按起始采样点取切片」**（`noiseAt(k)`）。所以同一个事件（比如第 3 拍的地鼓瞬态）永远拿到同一段噪声，不需要任何顺序状态——这正是「纯函数」在音频里的等价物。
 2. 预生成 `N + SR` 长度的噪声（多留 1 秒），是因为最长的事件（`crash` 的 1.7 s 衰减 + 尾巴）会越过 `N`。`noiseAt` 的取模保证了越界也能取到东西。
 ## 5. 基础工具层
+
 | 函数（行号） | 签名 | 说明 |
 |---|---|---|
 | `freq(name)` | 78 | 音名 → 频率（十二平均律，A4 = 440） |
@@ -159,6 +163,7 @@ const PROG_ORIGIN = 12;   // 进行从第 12 拍（6.0 s，pixel 段起点）开
 const chordAt = (beat) => PROG[(((Math.floor((beat - PROG_ORIGIN) / 2) % 4) + 4) % 4)];
 ```
 2 小节 = 一个完整乐句 `Am - F - C - G`。四段：
+
 | 段 | 拍 | 内容 |
 |---|---|---|
 | ink 0–6 s | 0–12 | `pad` Am drone `gain 0.16`；`tick` 在 1.0–5.5 s 之间**不规则**间隔（打字机）；4.5–6.0 s 一段上升涌流，末尾 30 ms 收，`mix` 的 `gain` 用 0.30 的包络 |
@@ -167,6 +172,7 @@ const chordAt = (beat) => PROG[(((Math.floor((beat - PROG_ORIGIN) / 2) % 4) + 4)
 | outro 19–24 s | 38–48 | `crash(38)` `gain 0.95`；`pad` Am 19.0 s `gain 0.42` / F 21.0 s `gain 0.21`；四个 `pluck`：39.5 A4、41.0 C5、42.5 E5、44.0 D5；22.5 s 最终解决和弦 `['A2','E3','A3','C4','E4']`（五音宽 voicing）`gain 0.42`，包络 `Math.pow(1 - i/len, 1.6) * Math.exp(-t/1.35)` —— **正好在 24.0 s 归零** |
 **收尾必须自己写死**：最后一件事是 0.15 s 的升余弦淡出 + `L[N-1]=0; R[N-1]=0;`。没有它，末尾会有一声「啪」。
 ## 8. 母带链（5.0–5.3）
+
 | 步 | 行号 | 做什么 |
 |---|---|---|
 | 5.0 | 625 | 隔直：一阶高通 20 Hz（去掉低频直流） |
@@ -180,6 +186,7 @@ const chordAt = (beat) => PROG[(((Math.floor((beat - PROG_ORIGIN) / 2) % 4) + 4)
 const BPM = 120;      // 27 行
 ```
 改完必须**同步改页面里的 BPM**（`assets/skeleton.html` 的参数节：`const FPS = 30, BPM = 120;`），否则画面的节拍网格和音乐错位。三个常见选择：
+
 | BPM | 一拍 | 一拍帧数 @30fps | 适合 |
 |---|---|---|---|
 | 90 | 0.667 s | 20 | 缓慢、纪录片、水墨 |
@@ -219,6 +226,7 @@ const PROG_ORIGIN = 4;                                                // 394 行
 const N = DUR * SR;                                                   // 32 行（= 264,600）
 ```
 然后把四段材料按 12 拍重排（**不改编曲代码的话，音乐会在第 6 秒被硬切掉**，听起来像断电）：
+
 | 拍 | 用哪段的材料 |
 |---|---|
 | 0–4 | ink 段：Am drone `pad` + 3–5 个不规则 `tick`（对应 `poster` 的扫入与标题） |
@@ -299,6 +307,7 @@ DBG=1 node assets/audio.mjs                            # 额外打印母带前�
 ffprobe … out/track.wav                                # 规格
 bash assets/build.sh                                   # 编码时自动检查音画时长是否一致
 ```
+
 | 想改什么 | 改哪里 |
 |---|---|
 | 速度 | 27 行 `BPM`（+ 画面里的 `BPM`） |

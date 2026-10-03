@@ -29,6 +29,7 @@ node assets/render.mjs frames 7                 # 1920 宽、4 个标签页
 node assets/render.mjs frames 7 1920 1          # 单标签页（排查用）
 node assets/render.mjs /tmp/look 12 960 4       # 换种子、换宽度、换目录
 ```
+
 | 位置参数 | 默认 | 含义 |
 |---|---|---|
 | 1 | `frames` | 输出目录（不存在会自动建） |
@@ -36,6 +37,7 @@ node assets/render.mjs /tmp/look 12 960 4       # 换种子、换宽度、换目
 | 3 | 空 | 输出宽度；**空的时候问页面**：横屏 1920、竖屏 1080（`AR < 1` 时） |
 | 4 | `4` | 标签页数（`Math.max(1, +tabsS)`） |
 **环境变量（全部）**：
+
 | 变量 | 默认 | 作用 |
 |---|---|---|
 | `HTML` | `assets/skeleton.html` | 要渲染的页面（会 `path.resolve`，不存在就报 `没有这个文件：…（用 HTML= 指定）` 并退出 1） |
@@ -79,6 +81,7 @@ args: ['--allow-file-access-from-files', '--disable-accelerated-2d-canvas',
 ```bash
 node assets/shot.mjs <帧号...>          # -> shots/f00000.png …
 ```
+
 | 环境变量 | 默认 | 作用 |
 |---|---|---|
 | `SEED` | `7` | 种子 |
@@ -102,6 +105,7 @@ HTML=/tmp/sk-card.html node assets/shot.mjs 200 300
 ```bash
 bash assets/build.sh          # 或 npm run build
 ```
+
 | 环境变量 | 默认 | 作用 |
 |---|---|---|
 | `FPS` | `30` | 输入帧率（**必须与页面里的 `FPS` 一致**） |
@@ -159,6 +163,7 @@ Chrome 的加速 2D 画布在经历几次 `getImageData`（我们每帧都在做
 
 加上 `--disable-accelerated-2d-canvas` 之后，所有标签页都走同一条软件路径，结果完全一致。这条是「确定性」在工程层的必要条件和**唯一**必要条件里最容易被忽略的一条。
 ## 6. 为什么用 `toDataURL` 而不是 `page.screenshot`
+
 | | `canvas.toDataURL('image/png')` | `page.screenshot()` |
 |---|---|---|
 | 来源 | 画布里的真实像素 | 浏览器合成器的输出 |
@@ -187,6 +192,7 @@ ffprobe -v error -select_streams v:0 \
 **PNG 帧本身是 sRGB/full range**，所以「scale 到 limited」这一步不能省；只打标记不转范围，暗部和亮部会被切。
 ## 8. URL 旋钮（浏览器调试用）
 直接打开 `assets/skeleton.html`（`file://` 就行），或者给无头脚本拼 URL：
+
 | 旋钮 | 例子 | 作用 |
 |---|---|---|
 | `?f=` | `?f=140` | 只渲染第 140 帧（静态图） |
@@ -199,6 +205,7 @@ ffprobe -v error -select_streams v:0 \
 竖版要点：`?ar=9:16` 之后 `LW=1080, LH=1920`（短边仍是 1080），`render.mjs` 的宽度默认值也会变成 1080。
 ## 9. 性能量级（实测，不是估算）
 测试机：WSL2 / 4 核 / Node v22.23.3 / Chrome for Testing 154。**在页面内**用 `performance.now()` 包 `window.RISO.frame(n,w,7)`，所以含 `toDataURL` 的 PNG 编码：
+
 | 场景（1920 宽） | 单帧耗时 |
 |---|---|
 | 骨架演示 f0 / f30 / f90 / f120 / f179 | 712.6 / 582.5 / 468.5 / 527.0 / 646.1 ms |
@@ -294,6 +301,7 @@ rm -f frames/f00{390..570}.png        # 注意前面的 0 位数：文件名是 
 START=390 END=570 node assets/render.mjs frames 7
 ```
 ## 12. 排错对照表
+
 | 症状 | 原因 | 改法 |
 |---|---|---|
 | `找不到 Chrome：设 CHROME=…` | 没装浏览器或路径不对 | `npx puppeteer browsers install chrome`，或 `CHROME=…` |
@@ -302,35 +310,11 @@ START=390 END=570 node assets/render.mjs frames 7
 | 中文全是空白（但英文正常） | 没装中文字体 | `fc-list :lang=zh` → `apt install fonts-noto-cjk` |
 | 同一帧在不同标签页颜色不一样 | 没加 `--disable-accelerated-2d-canvas` | 用仓库里的 `render.mjs`（已带） |
 | 拉片里有几格是黑的 / 递归爆栈 | 联系表采样全片，而某段又要建联系表 | 加 `IN_SHEET` 闸门（见 01 第 11 节） |
-| 部分帧缺失、最终 `exit code 1` | 某些帧渲染失败 | 看 `第 N 帧失败：`；`RESUME=1` 重跑补齐 |
-| `frames/` 里有旧帧导致视频抖动 | 改了构图但没重渲 | 删掉那一段帧再 `RESUME=1` 渲 |
+| 部分帧缺失 / `exit code 1` / 视频抖动 | 某些帧渲染失败，或改了构图但旧帧还在 | 看 `第 N 帧失败：`；删掉那一段帧再 `RESUME=1` 渲 |
 | 编码后颜色发灰/发绿 | 没打 BT.709 标记、或用了自己的 ffmpeg 命令 | 用 `build.sh`；`ffprobe` 查 `color_space=bt709` |
-| `nb_read_frames` 不等于期望值 | 帧命名不连续（`f%05d`）或缺帧 | 检查 `frames/` 里有没有断号 |
+| `nb_read_frames` 不等于期望值 | 帧命名不连续（`f%05d`）或缺帧 | 检查 `frames/` 有没有断号 |
 | 视频末尾有一段没声音/被截短 | 音画时长不一致（`-shortest` 生效） | 看 `build.sh` 的 ⚠️ 提示，改 `audio.mjs` 的 `DUR`/`SEC_*` |
-| 一次渲染就吃满内存 | 标签页太多 / 宽度太大 | `tabs` 降到 4 以内，或降 `W` |
-| 竖版渲出来尺寸不对 | 只给了 `W=1080` 但页面还是 16:9 构图 | 同时给 `AR=9:16`（`shot.mjs` 不支持 `AR`，用浏览器或 `render.mjs`） |
+| 吃满内存 / 竖版尺寸不对 | `tabs` 或宽度太大；只给了 `W=1080` 但页面还是 16:9 | `tabs` 降到 4 以内或降 `W`；竖版同时给 `AR=9:16`（`shot.mjs` 不支持 `AR`，用浏览器或 `render.mjs`） |
 ## 13. 一页速查
-```bash
-# 看一眼（最快）
-node assets/shot.mjs 0 60 120
-
-# 24 格拉片自检
-SHEET=shots/sheet.png SHEET_N=24 SHEET_W=460 node assets/render.mjs frames 7
-
-# 全片渲染 + 编码
-node assets/render.mjs frames 7 && bash assets/build.sh
-
-# 换种子/宽度/画幅
-node assets/render.mjs /tmp/v2 12 960 4
-HTML=film/index.html AR=9:16 node assets/render.mjs frames 7
-
-# 断点续渲
-RESUME=1 node assets/render.mjs frames 7
-
-# 校验产物
-ffprobe -v error -select_streams v:0 -count_frames \
-  -show_entries stream=nb_read_frames,width,height,pix_fmt,color_space,color_primaries \
-  -of default=nw=1 out/film.mp4
-ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 out/film.mp4
-```
+含 ffprobe 校验命令的完整速查表在 [`05-qa.md`](05-qa.md) 第 9 节；本文各参数见第 2 / 3 / 4 节。
 下一篇：[`04-audio.md`](04-audio.md) —— 纯 Node 合成配乐、节拍对齐、怎么改 BPM 和时长。

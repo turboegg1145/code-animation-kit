@@ -1,6 +1,7 @@
 # 01 · 引擎解剖：九节顺序、全部 API 签名、怎么加一个分镜
 本文对应 `assets/skeleton.html`（**497 行**，可跑）。行号都是那个文件里的真实行号，改完对照着找。
 ## 0. 地图
+
 | 行号 | 节 | 干什么 |
 |---|---|---|
 | 1–27 | 文件头 | URL 旋钮说明 + 九节顺序声明 |
@@ -18,9 +19,7 @@
 ```
 参数 → 生成器 → 数学 → 画布池 → 调色板 → 辅助 → 引擎 → 分镜 → 启动
 ```
-**辅助函数必须在分镜块之上。** 因为实际工作方式是「一段一段地删改分镜」：如果你把某个 helper 夹在两段分镜中间，删掉上面那段镜头时，helper 会跟着被删掉，而报错位置会指向下面那段——排查成本从 10 秒变成 10 分钟。
-
-同理，分镜块里不要写「只被这一段用一次」的小工具函数，除非它真的只服务这一段；一旦第二段也要用，立刻提到辅助节去。
+**辅助函数必须在分镜块之上。** 因为实际工作方式是「一段一段地删改分镜」：如果你把某个 helper 夹在两段分镜中间，删掉上面那段镜头时，helper 会跟着被删掉，而报错位置会指向下面那段——排查成本从 10 秒变成 10 分钟。同理，分镜块里不要写「只被这一段用一次」的小工具函数，除非它真的只服务这一段；一旦第二段也要用，立刻提到辅助节去。
 ## 2. 【参数】29–43
 ```js
 const Q = new URLSearchParams(location.search);
@@ -65,6 +64,7 @@ function rng(seed){ /* sfc32 */ }
   sign: () => f() < 0.5 ? -1 : 1 }
 ```
 **三个生成器，各管一个时间尺度**（都在 `renderFrame` 里构造，见 7 节）：
+
 | 生成器 | 构造式 | 重掷频率 | 用来画什么 |
 |---|---|---|---|
 | `R` | `rng(hash(seed,'plate',P.name))` | **整段一次**（每次渲染这一段都一样） | 构图、地形、浪的位置、整段固定的倾斜 |
@@ -83,6 +83,7 @@ function stagger(t,start,dur,i,n,spread=0.35,curve=ease.out4){ ... }
 const pad=(n,w=2)=>String(n).padStart(w,'0');
 const bayer=(x,y)=>{ /* 4x4 有序抖动矩阵，0..1 */ };
 ```
+
 | 函数 | 用在什么时候 |
 |---|---|
 | `span(f,a,b)` | 把帧号映射成 0..1 的进度，**自动 clamp**：`span(S.i, -6, BEAT*0.9)` 表示「动画从第 −6 帧就开始，到 0.9 拍结束」 |
@@ -133,6 +134,7 @@ const PHO=Object.freeze({bg:'#030603', mid:'#175c17', lit:'#5fdc5f', hi:'#c8ffc8
 ```
 用哪套不是审美问题，是**角色分配**问题：背景 / 暗部 / 中间调 / 亮部 / 强调，五到六个槽位。强调色只占画面 5–10%（详见 02）。
 ## 7. 【辅助】124–293：工具箱
+
 | 签名 | 作用 / 性能要点 |
 |---|---|
 | `boil(pts,b,amp)` | 沿法线抖动折线。`b` 传 `S.b`（每 3 帧重掷）= 手绘沸腾；传 `S.nz` = 噪点 |
@@ -167,6 +169,7 @@ function renderFrame(n,width,seed,target)
 function contactSheet(n,cellW,seed,target,f0=0,f1=TOTAL()-1)
 ```
 **`plate(name, opts, fn)` 的 `opts` 只有三个键**：
+
 | 键 | 默认 | 作用 |
 |---|---|---|
 | `len` | 必填 | 段落长度（帧）。取 `BEAT` 的整数倍 |
@@ -184,6 +187,7 @@ const S={ f:n, i:local, t:local/P.len, len:P.len, g, cv, sc, seed,
           b:rng(hash(seed,'b',P.name,Math.floor(n/3))),
           nz:rng(hash(seed,'nz',n)) };
 ```
+
 | 字段 | 含义 |
 |---|---|
 | `S.f` / `S.i` / `S.t` / `S.len` | 全局帧 / 段内帧 / 段内进度 / 段长 |
@@ -233,29 +237,18 @@ window.RISO = {
 * 长度取 `BEAT` 的整数倍。`4*BAR`（8 秒）够讲一件事，`BAR`（2 秒）是一张卡。
 * 位置就是 `plate()` 被调用的顺序——插在 `dots` 之后，它就从第 180 帧开始。
 ### 第 2 步：只画静态构图
-先把 `S.i` 当 0 用，画完出静帧：
-```bash
-node assets/shot.mjs 180 300        # 段首 + 中段
-```
+先把 `S.i` 当 0 用，画完出静帧：`node assets/shot.mjs 180 300`（段首 + 中段）。
 ### 第 3 步：加动画、加错位、加收尾
 ```js
-/* =====================================================================
-   分镜 · 数据卡（自己加的第三段：接在 dots 之后）
-   ===================================================================== */
+/* 分镜 · 数据卡（接在 dots 之后 = 第 180 帧起，长 8 秒） */
 plate('card',{len:4*BAR},(S,R)=>{
   const g=S.g;
-
-  g.fillStyle=DEMO.bg; g.fillRect(-200,-200,LW+400,LH+400);
-
-  /* 整段固定不变的东西用 R：重新渲染这一段永远拿到同一串随机数 */
-  const tilt=R.r(-0.015,0.015);
+  g.fillStyle=DEMO.bg; g.fillRect(-200,-200,LW+400,LH+400);   /* 铺底要超出画布 */
+  const tilt=R.r(-0.015,0.015);            /* 整段固定：用 R，重新渲染永远同一串 */
   const cols=7, rows=4, total=cols*rows;
-
-  camPush(g,S.t,1.05,1.0);                          /* 整段极缓地拉远，对数插值 */
-
-  const tin=ease.outExpo(span(S.i,-4,BEAT*1.4));    /* -4：第 0 帧就已经有东西可看 */
-  const solved=span(S.i,BEAT*2.4,BEAT*3.6);         /* 全亮之后再收一次版 */
-
+  camPush(g,S.t,1.05,1.0);                 /* 整段极缓拉远，对数插值 */
+  const tin=ease.outExpo(span(S.i,-4,BEAT*1.4));   /* -4：第 0 帧就已经有东西可看 */
+  const solved=span(S.i,BEAT*2.4,BEAT*3.6);        /* 全亮之后再收一次版 */
   g.save(); g.translate(CX,CY); g.rotate(tilt); g.translate(-CX,-CY);
 
   for(let k=0;k<total;k++){
@@ -271,25 +264,13 @@ plate('card',{len:4*BAR},(S,R)=>{
     g.fillRect(cx-LH*0.03,cy+LH*0.020,LH*0.06*(0.35+0.65*S.nz.f()),LH*0.004);  /* S.nz 每帧重掷 */
   }
   g.globalAlpha=1; g.restore();
-
-  if(solved>0.001){
+  if(solved>0.001)
     vText(g,'THE DATA IS THE DRAWING',{x:CX,y:LH*(1-SAFE*1.2),size:Math.min(LH*0.075,LW*0.062),
       color:DEMO.ink,align:'center',alpha:solved});
-  }
-
   S.post.grain=4; S.post.vig=0.16;
 });
 ```
-这段代码里每一件事都有来源：
-| 写法 | 理由 |
-|---|---|
-| `g.fillStyle=DEMO.bg; g.fillRect(-200,-200,LW+400,LH+400)` | 铺底要超出画布，因为 `camPush` 会缩放，边缘会露出来 |
-| `R.r(-0.015,0.015)` | 整段固定的一点点倾斜 = 手工感；换成 `S.nz` 就变成抽风 |
-| `span(S.i,-4,...)` | 起手放在第 0 帧之前，**第 0 帧必须有东西可看** |
-| `stagger(..., d*10, 20, 0.9, ease.out)` | 错位顺序 = 从左上到右下，顺序本身携带意义 |
-| `p>0.99 ? DEMO.accent : DEMO.mid` | 强调色只在「亮完」之后出现，占比很小 |
-| `S.nz.f()` 那条短线 | 每帧重掷 → 只抖不闪；颗粒感来自「每帧不同」 |
-| `S.post.grain=4; S.post.vig=0.16;` | 收尾统一在 `post()` 做，别在分镜里逐像素画噪点 |
+这段代码里每一处写法都有来源：**铺底超出画布**（`fillRect(-200,-200,LW+400,LH+400)`，`camPush` 缩放时四边会露出来）；**用 `R.r` 定整段倾斜**（手工感；换成 `S.nz` 就变成抽风）；**`span(S.i,-4,…)` 让第 0 帧就已经有东西可看**；**`stagger(…,d*10,20,0.9,ease.out)` 让错位从左上走到右下**（顺序本身携带意义）；**`p>0.99 ? DEMO.accent : DEMO.mid`** 让强调色只在「亮完」之后出现，占比很小。短线用 `S.nz.f()` 每帧重掷（只抖不闪，颗粒感来自「每帧不同」），收尾统一交给 `S.post.grain=4; S.post.vig=0.16`，别在分镜里逐像素画噪点。
 ### 第 4 步：登记提示点（可选但推荐）
 画面和声音共用的时刻写进 `CUES`：
 ```js
@@ -321,29 +302,20 @@ let SHEET=null, IN_SHEET=false;                       // 803
 function buildSheet(n,seed){
   if(IN_SHEET) return null;                           // 807
   IN_SHEET=true;                                      // 808
-  try { /* … 在这里调 renderFrame … */ }
-  finally { IN_SHEET=false; }                         // 819
+  try { /* … 在这里调 renderFrame … */ } finally { IN_SHEET=false; }   // 819
 }
-// 分镜里：
-if(!SHEET && !IN_SHEET) SHEET=buildSheet(384,SEED);   // 905
-// 文字/元素的透明度也要跟着让路，否则小格里塞满大字：
-const txtA = IN_SHEET ? 1 : ease.out4(span(S.i, ...)); // 857 附近的用法
+if(!SHEET && !IN_SHEET) SHEET=buildSheet(384,SEED);   // 905：分镜里的调用点
+const txtA = IN_SHEET ? 1 : ease.out4(span(S.i, ...)); // 857：文字透明度也得让路，否则小格里塞满大字
 ```
 两个闸门的分工：
+
 | 闸门 | 防什么 | 症状 |
 |---|---|---|
 | `DEPTH`（引擎提供） | 内层渲染擦掉外层画布 | 联系表整张变黑/只画出一格 |
 | `IN_SHEET`（自己加） | 分镜里的联系表递归调用自己 | `RangeError: Maximum call stack size exceeded`，或渲染到某帧卡死 |
 ## 12. 常见改动速查
-| 想改 | 改哪里 | 连带影响 |
-|---|---|---|
-| 帧率 | `const FPS = 30` | `BEAT` 跟着变；音频侧的 `FPS` 常量也要同步 |
-| 速度 | `const BPM = 120` | `BEAT`、`BAR` 变；段落长度若写的是拍数则自动跟随 |
-| 画幅 | 加 `?ar=9:16`（或 `?ar=9x16` / `?ar=9/16`） | `LW/LH/CX/CY` 全变；`contactSheet` 的列数变 8 |
-| 种子 | `?s=12` 或 `SEED=12` | 所有随机流变；构图会换一套 |
-| 输出宽度 | `?w=960` / `W=960` / `render.mjs` 的第 3 个参数 | 逻辑坐标不变，只是缩放 |
-| 段落顺序 | 调整 `plate()` 的调用顺序 | 起始帧跟着变；用 `at()` 的地方不用改 |
-| 末帧别被压黑 | 最后一段 `cutOut:false` | 转场少一次渐出 |
+**帧率/速度**：`const FPS = 30` / `const BPM = 120`（`BEAT`、`BAR` 跟着变，音频侧常量要同步）。**画幅**：`?ar=9:16`（`:` `x` `/` 都收；`LW/LH/CX/CY` 全变，`contactSheet` 列数变 8）。**种子/宽度**：`?s=12` / `?w=960`，或 `render.mjs` 的第 3 个参数（随机流换一套；逻辑坐标不变，只是缩放）。**段落顺序**：调整 `plate()` 调用顺序（起始帧跟着变，用 `at()` 的地方不用改）。**末帧别被压黑**：最后一段 `cutOut:false`。
+
 改完的最小验证：`node assets/shot.mjs <该段首帧> <该段末帧>` + 一次 24 格拉片。
 
 下一篇：[`02-style.md`](02-style.md) —— 调色板、缓动、十二法、相机。
